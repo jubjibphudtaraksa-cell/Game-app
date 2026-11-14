@@ -1,59 +1,22 @@
-# วางที่ .github/workflows/build-android.yml
-# ต้องมีไฟล์ project.zip อยู่ที่ root ของ repo (workflow จะแตกไฟล์ให้เอง)
-name: Build Android APK
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-env:
-  UNITY_VERSION: 2022.3.50f1
-
+# วางที่ .github/workflows/unpack-project.yml แล้วกด Run workflow
+# แตก project.zip เป็นโปรเจกต์ Unity จริง บน branch "unity-project" (ไม่ต้องใช้ Unity license)
+name: Unpack Unity project
+on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
-  build:
+  unpack:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Unpack project.zip
+      - name: Unpack to branch unity-project
         run: |
-          if [ -f project.zip ]; then unzip -q -o project.zip; fi
-          ls
-
-      - uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-Android-${{ hashFiles('project.zip') }}
-          restore-keys: Library-Android-
-
-      - name: Generate scenes and settings
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: Android
-          buildMethod: ProjectSetup.Generate
-          versioning: None
-          allowDirtyBuild: true
-
-      - name: Build APK
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: Android
-          androidExportType: androidPackage
-          versioning: None
-          allowDirtyBuild: true
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Ironline-APK
-          path: build/Android
+          mkdir /tmp/out && unzip -q project.zip -d /tmp/out
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git checkout --orphan unity-project
+          git rm -rf . -q
+          cp -r /tmp/out/. .
+          git add -A
+          git commit -qm "Unity project"
+          git push -f origin unity-project
