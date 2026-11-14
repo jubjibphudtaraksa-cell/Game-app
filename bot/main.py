@@ -1,12 +1,3 @@
-"""
-bot/main.py
------------
-Discord bot entrypoint. Loads cogs, registers slash commands, and
-starts the gateway connection.
-
-Run with:
-    python -m bot.main
-"""
 
 from __future__ import annotations
 
